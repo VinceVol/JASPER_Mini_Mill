@@ -1,0 +1,7 @@
+T1  P1  Z0.037333  D25.4  ;3mm end mill Sample Tool
+T2  P2  ;Ball Nose Index
+T3  P3  ;Added 20260104
+T4  P4  D7.9375  ;ER1
+T5  P5  ;Added 20260104
+T6  P6  ;Added 20260105
+T99  P99  X-0.001163  Y0.007108  Z84.455  D2  I1.383048  J1.432048  ;Added 20260111

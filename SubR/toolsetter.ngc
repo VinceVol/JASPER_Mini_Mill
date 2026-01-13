@@ -1,0 +1,80 @@
+O<toolsetter> sub
+
+(--- Configuration ---)
+#<base_setter_z> = -180   (Target machine Z for tool with known length)
+#<unknown_start_z> = -100.0 (Safety start height for tools with 0 offset)
+#<max_travel_z> = -270.0    (Absolute limit to stop searching)
+#<fast_feed> = 200
+#<slow_feed> = 10
+#<retract>   = 3.0
+
+(--- Identify Tool ---)
+#<target_tool> = #<_selected_tool>
+(Example: If target is 4, this looks at #5404)
+#<tool_table_index> = [5400 + #<target_tool>]
+#<current_z_offset> = ##<tool_table_index>
+
+(--- Logic: Determine Start Height and Search Range ---)
+O110 if [#<current_z_offset> EQ 0]
+    (CASE: New tool or offset was cleared)
+    #<dynamic_start_z> = #<unknown_start_z>
+    #<search_dist> = -175.0
+O110 else
+    (CASE: Existing tool length is known)
+    #<dynamic_start_z> = [#<base_setter_z> + #<current_z_offset>]
+    #<search_dist> = -30.0
+O110 endif
+
+(--- Safety Check: Don't exceed Z limits ---)
+O120 if [#<dynamic_start_z> GT 0]
+    #<dynamic_start_z> = 0
+O120 endif
+
+(--- Movement ---)
+G90 G53 G0 Z0                       (Go to top)
+G53 G0 X0 Y66.5                     (Move to setter XY)
+G53 G0 Z#<dynamic_start_z>          (Move to calculated start height)
+
+(--- Probing ---)
+G91 G38.2 Z#<search_dist> F#<fast_feed>
+
+(--- NEW: Capture the hit position immediately ---)
+#31 = #5063  (This is the G53 Z position where the probe tripped)
+
+(--- Check if probe actually hit anything ---)
+(If #5063 hasn't changed from the start, or G38.2 failed, this handles it)
+O130 if [#5063 EQ 0]
+    (abort, Probe failed to trip within range!)
+O130 endif
+
+(--- Slow Touch for Accuracy ---)
+G90 G1 Z[#31 + #<retract>] F#<fast_feed> (Move back up to trip point + retract)
+G91 G38.2 Z-[#<retract> + 2] F#<slow_feed>
+
+(--- Update #31 with the high-precision slow touch result ---)
+#31 = #5063
+
+(--- Update Tool Table ---)
+#<actual_length> = [#31 - #<base_setter_z>]
+
+(--- Update Tool Table ---)
+G90
+(Use L1 to store the physical length of the tool)
+G10 L1 P#<target_tool> Z#<actual_length>
+G4 P0.1
+G43 H#<target_tool>
+
+(debug, Tool #<target_tool> Length: #<actual_length>)
+
+(--- IMPORTANT: Synchronize and Activate ---)
+G4 P0.1 (Small dwell to let the tool table update settle)
+G43 H#<target_tool> (Force activation of the specific tool offset)
+
+(--- Optional: Ensure the table is saved to disk ---)
+M61 Q#<target_tool> (This forces the current tool number to be recognized)
+
+(debug, Tool #<target_tool> measured. New Offset: #5403)
+G90 G53 G0 Z0
+
+O<toolsetter> endsub [1]
+M2
