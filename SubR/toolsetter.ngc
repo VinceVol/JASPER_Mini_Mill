@@ -1,7 +1,7 @@
 O<toolsetter> sub
 
 (--- Configuration ---)
-#<base_setter_z> = -248.307   (Target machine Z for tool with known length)
+#<base_setter_z> = -252.81   (Target machine Z for tool with known length)
 #<unknown_start_z> = -100.0 (Safety start height for tools with 0 offset)
 #<max_travel_z> = -280    (Absolute limit to stop searching)
 #<fast_feed> = 200
@@ -10,7 +10,10 @@ O<toolsetter> sub
 
 (--- Identify Tool ---)
 #<target_tool> = #<_selected_tool>
-G4 P0 
+(--- FORCE THE INTERPRETER TO SYNC ---)
+M61 Q#<target_tool>
+G4 P0.1 (Force a small pause to let the tool table buffer update)
+
 #<tool_table_index> = [5400 + #<target_tool>]
 #<current_z_offset> = ##<tool_table_index>
 
