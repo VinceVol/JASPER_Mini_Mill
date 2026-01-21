@@ -1,7 +1,7 @@
 O<toolsetter> sub
 
 (--- Configuration ---)
-#<base_setter_z> = -252.81   (Target machine Z for tool with known length)
+#<base_setter_z> = -239.595   (Target machine Z for tool with known length)
 #<unknown_start_z> = -100.0 (Safety start height for tools with 0 offset)
 #<max_travel_z> = -280    (Absolute limit to stop searching)
 #<fast_feed> = 200
@@ -78,10 +78,16 @@ G53 G1 Z[#31 + #<retract>] F#<fast_feed> (Retract to Machine Z)
 (--- Update Tool Table ---)
 #<actual_length> = [#31 - #<base_setter_z>]
 (Use L1 to store the physical length of the tool)
-G10 L1 P#<target_tool> Z#<actual_length>
-G4 P0.1
-G43 H#<target_tool>
-
+(--- GUARD: Prevent P0 error during file preview ---)
+O150 if [#<target_tool> GT 0]
+    (Use L1 to store the physical length of the tool)
+    G10 L1 P#<target_tool> Z#<actual_length>
+    G4 P0.1
+    G43 H#<target_tool>
+O150 else
+    (This part runs during startup/preview when no tool is selected)
+    (debug, Toolsetter preview: No tool selected, skipping G10)
+O150 endif
 (debug, Tool #<target_tool> Length: #<actual_length>)
 
 (--- IMPORTANT: Synchronize and Activate ---)

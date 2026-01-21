@@ -1,0 +1,26 @@
+ sudo apt update && sudo apt install syncthing
+
+systemctl --user enable syncthing.service
+
+systemctl --user start syncthing.service
+
+
+4. Share your CNC folder
+
+
+
+On the LinuxCNC web interface, click Add Folder.
+
+Point it to your G-code folder (e.g., /home/username/linuxcnc/nc_files).
+
+In the Sharing tab of that folder’s settings, check the box for your "Ubuntu Desktop".
+
+On your Ubuntu Desktop, a message will pop up asking where to save the incoming folder. Pick a folder on your desktop. 
+
+On your Ubuntu Desktop, open your web browser to http://localhost:8384.
+
+Go to Actions (top right) -> Show ID. Copy this long string.
+
+On your LinuxCNC machine, open the same URL (http://localhost:8384), click Add Remote Device, and paste the ID from your desktop.
+
+Accept the connection prompt that appears on your desktop.  
