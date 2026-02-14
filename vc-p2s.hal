@@ -23,14 +23,17 @@ net jog-counts vc-p2s.jog-counts => axis.x.jog-counts
 net jog-counts vc-p2s.jog-counts => axis.y.jog-counts 
 net jog-counts vc-p2s.jog-counts => axis.z.jog-counts
 
-# 3---FOR 4TH AXIS, REMOVE # FROM THE FOLLOWING LINES
-#net axis.3.jog-en vc-p2s.axis.3.jog-enable => axis.3.jog-enable
-#net jog-scale vc-p2s.jog-scale => axis.3.jog-scale 
-#net jog-counts vc-p2s.jog-counts => axis.3.jog-counts 
-#net jog.3.cont-plus  vc-p2s.jog.3.plus  => halui.jog.3.plus 
-#net jog.3.cont-minus vc-p2s.jog.3.minus => halui.jog.3.minus 
-#setp axis_3_max_velocity [AXIS_3]MAX_VELOCITY
-
+net jog-x-pos   vc-p2s.jog.0.plus
+net jog-x-neg   vc-p2s.jog.0.minus
+net jog-y-pos   vc-p2s.jog.1.plus
+net jog-y-neg   vc-p2s.jog.1.minus
+net jog-z-pos   vc-p2s.jog.2.plus
+net jog-z-neg   vc-p2s.jog.2.minus
+net jog-speed vc-p2s.jog.velocity => halui.axis.jog-speed 
+net in-position => vc-p2s.is-moving
+setp axis_0_max_velocity [AXIS_X]MAX_VELOCITY
+setp axis_1_max_velocity [AXIS_Y]MAX_VELOCITY
+setp axis_2_max_velocity [AXIS_Z]MAX_VELOCITY
 
 # 4---FEED OVERRIDE
 setp halui.feed-override.scale 0.001
@@ -71,10 +74,10 @@ net program.resume vc-p2s.program.resume => halui.program.resume
 net program.stop   vc-p2s.program.stop   => halui.program.stop
 
 # 9---ZERO (Updated to hook into existing signals)
-net zero-x <= vc-p2s.zero-x
-net zero-y <= vc-p2s.zero-y
-net zero-z <= vc-p2s.zero-z
-net go-to-zero <= vc-p2s.go-to-zero
+net zero-x vc-p2s.zero-x => halui.mdi-command-27 
+net zero-y vc-p2s.zero-y => halui.mdi-command-28
+net zero-z vc-p2s.zero-z => halui.mdi-command-29 
+net go-to-zero vc-p2s.go-to-zero  => halui.mdi-command-30 
 
 
 # 10---SPINDLE
@@ -103,10 +106,10 @@ setp stepsize-1 	0.0001
 setp stepsize-2 	0.001
 
 setp stepsize-3 	0.01
-setp stepsize-4 	0.1
-setp stepsize-5 	1
-setp stepsize-6 	0
-setp stepsize-7 	0
+setp stepsize-4 	0.025
+setp stepsize-5 	0.05
+setp stepsize-6 	0.1
+setp stepsize-7 	1
 setp stepsize-8 	0
 setp stepsize-9 	0
 
