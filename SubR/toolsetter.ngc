@@ -1,45 +1,28 @@
 O<toolsetter> sub
 
 (--- Configuration ---)
-#<base_setter_z> = -239.595   (Target machine Z for tool with known length)
+#<base_setter_z> = -180   (Target machine Z for tool with known length)
 #<unknown_start_z> = -100.0 (Safety start height for tools with 0 offset)
-#<max_travel_z> = -280    (Absolute limit to stop searching)
+#<max_travel_z> = -270.0    (Absolute limit to stop searching)
 #<fast_feed> = 200
 #<slow_feed> = 10
 #<retract>   = 3.0
 
 (--- Identify Tool ---)
 #<target_tool> = #<_selected_tool>
-(--- FORCE THE INTERPRETER TO SYNC ---)
-M61 Q#<target_tool>
-G4 P0.1 (Force a small pause to let the tool table buffer update)
-
+(Example: If target is 4, this looks at #5404)
 #<tool_table_index> = [5400 + #<target_tool>]
 #<current_z_offset> = ##<tool_table_index>
 
-(--Determine if tool needs constant probing--)
-#<tool_type> = [#<_selected_tool> / 100] (Integer division)
-O140 if [#<tool_type> GT 1] 
-	(CASE -- this tool does not need probing)
-	G4 P0.1 
-    G43 H#<target_tool> 
-    M61 Q#<target_tool>
-    (debug, Tool #<target_tool> skipped probing. Using existing offset.)
-    G90 G53 G0 Z0
-    
-	O<toolsetter> return
-O140 endif
-
 (--- Logic: Determine Start Height and Search Range ---)
-(debug, z_off #<current_z_offset>)
 O110 if [#<current_z_offset> EQ 0]
     (CASE: New tool or offset was cleared)
     #<dynamic_start_z> = #<unknown_start_z>
     #<search_dist> = -175.0
 O110 else
     (CASE: Existing tool length is known)
-    #<dynamic_start_z> = [#<base_setter_z> + #<current_z_offset>+30]
-    #<search_dist> = -60.0
+    #<dynamic_start_z> = [#<base_setter_z> + #<current_z_offset>]
+    #<search_dist> = -30.0
 O110 endif
 
 (--- Safety Check: Don't exceed Z limits ---)
@@ -47,47 +30,40 @@ O120 if [#<dynamic_start_z> GT 0]
     #<dynamic_start_z> = 0
 O120 endif
 
-G49
-(Movement)
+(--- Movement ---)
 G90 G53 G0 Z0                       (Go to top)
 G53 G0 X0 Y66.5                     (Move to setter XY)
-G90 G53 G0 Z#<dynamic_start_z>
+G53 G0 Z#<dynamic_start_z>          (Move to calculated start height)
 
 (--- Probing ---)
-(We use G91 here ONLY to ensure the move is 'down' regardless of G54)
 G91 G38.2 Z#<search_dist> F#<fast_feed>
-G90 (Back to absolute immediately)
 
-(--- THE KEY FIX: Translate to Absolute Machine Z ---)
-(If your LinuxCNC is giving relative #5063, we add G54 Z back to it)
-#<raw_hit_z> = [#5063 + #5223]
-#31 = #<raw_hit_z>
-(debug, raw z #<raw_hit_z> raw z plus retract [#31 + #<retract>])
+(--- NEW: Capture the hit position immediately ---)
+#31 = #5063  (This is the G53 Z position where the probe tripped)
+
+(--- Check if probe actually hit anything ---)
+(If #5063 hasn't changed from the start, or G38.2 failed, this handles it)
+O130 if [#5063 EQ 0]
+    (abort, Probe failed to trip within range!)
+O130 endif
 
 (--- Slow Touch for Accuracy ---)
-G91 G1 Z+#<retract> F#<fast_feed> (Move back up to trip point + retract)
+G90 G1 Z[#31 + #<retract>] F#<fast_feed> (Move back up to trip point + retract)
 G91 G38.2 Z-[#<retract> + 2] F#<slow_feed>
 
-(Slow Probe)
-G90 (Force Absolute)
-G53 G1 Z[#31 + #<retract>] F#<fast_feed> (Retract to Machine Z)
-
-(Update #31 with the translated absolute machine position)
-#31 = [#5063 + #5223]
+(--- Update #31 with the high-precision slow touch result ---)
+#31 = #5063
 
 (--- Update Tool Table ---)
 #<actual_length> = [#31 - #<base_setter_z>]
+
+(--- Update Tool Table ---)
+G90
 (Use L1 to store the physical length of the tool)
-(--- GUARD: Prevent P0 error during file preview ---)
-O150 if [#<target_tool> GT 0]
-    (Use L1 to store the physical length of the tool)
-    G10 L1 P#<target_tool> Z#<actual_length>
-    G4 P0.1
-    G43 H#<target_tool>
-O150 else
-    (This part runs during startup/preview when no tool is selected)
-    (debug, Toolsetter preview: No tool selected, skipping G10)
-O150 endif
+G10 L1 P#<target_tool> Z#<actual_length>
+G4 P0.1
+G43 H#<target_tool>
+
 (debug, Tool #<target_tool> Length: #<actual_length>)
 
 (--- IMPORTANT: Synchronize and Activate ---)
@@ -101,3 +77,4 @@ M61 Q#<target_tool> (This forces the current tool number to be recognized)
 G90 G53 G0 Z0
 
 O<toolsetter> endsub [1]
+M2
