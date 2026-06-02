@@ -1,8 +1,8 @@
 O<toolsetter> sub
 
 (--- Configuration ---)
-#<base_setter_z> = -239.595   (Target machine Z for tool with known length)
-#<unknown_start_z> = -100.0 (Safety start height for tools with 0 offset)
+#<base_setter_z> = -234.467   (Target machine Z for tool with known length)
+#<unknown_start_z> = -1 (Safety start height for tools with 0 offset)
 #<max_travel_z> = -280    (Absolute limit to stop searching)
 #<fast_feed> = 200
 #<slow_feed> = 10
@@ -32,15 +32,10 @@ O140 endif
 
 (--- Logic: Determine Start Height and Search Range ---)
 (debug, z_off #<current_z_offset>)
-O110 if [#<current_z_offset> EQ 0]
-    (CASE: New tool or offset was cleared)
-    #<dynamic_start_z> = #<unknown_start_z>
-    #<search_dist> = -175.0
-O110 else
-    (CASE: Existing tool length is known)
-    #<dynamic_start_z> = [#<base_setter_z> + #<current_z_offset>+30]
-    #<search_dist> = -60.0
-O110 endif
+(CASE: New tool or offset was cleared)
+#<dynamic_start_z> = #<unknown_start_z>
+#<search_dist> = -240 (Start at the top)
+
 
 (--- Safety Check: Don't exceed Z limits ---)
 O120 if [#<dynamic_start_z> GT 0]
@@ -50,7 +45,7 @@ O120 endif
 G49
 (Movement)
 G90 G53 G0 Z0                       (Go to top)
-G53 G0 X0 Y66.5                     (Move to setter XY)
+G53 G0 X0 Y50                     (Move to setter X = 0 -8X.00)
 G90 G53 G0 Z#<dynamic_start_z>
 
 (--- Probing ---)
